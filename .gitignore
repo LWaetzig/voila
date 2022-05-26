@@ -9,6 +9,10 @@ __pycache__/
 # vscode directories
 .vscode/*
 
+# add local directories
+data/**
+.vscode/**
+
 # Distribution / packaging
 .Python
 build/
