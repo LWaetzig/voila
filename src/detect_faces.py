@@ -32,8 +32,6 @@ def detect_faces(input_path : str , threshold : float):
 
     output_image = f"data/detected_{image_name}"
     draw_rectangle(image,output_image,faces)
-    
-    Image(filename="data/detected_image.jpg")
 
 def draw_rectangle(image , output_image : str , boxes : dict):
     """_summary_
