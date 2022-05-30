@@ -105,7 +105,6 @@ def create_future_dates(df, days=None, weeks=None, months=None) -> pd.DataFrame:
 
 # get data from api for 5 years back
 data = yf.Ticker("AAPL").history("5y")
-stock_data = data.copy()
 
 # clean dataframe from unnecessary columns
 data = data.drop(columns=["Volume", "Dividends", "Stock Splits"])
@@ -130,11 +129,11 @@ def evaluate_model(data, deg: int) -> None:
     """
 
     # only keep "Open" column in DataFrame
-    data = data[["Open"]]
+    data = data[["Close"]]
 
     # store ordinal values of datetime objects in X and stock values in y
     X = data.index.map(dt.datetime.toordinal)
-    y = data["Open"]
+    y = data["Close"]
 
     # split dataset into train and test batch
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
@@ -150,5 +149,6 @@ def evaluate_model(data, deg: int) -> None:
     print("MAE : ", mean_absolute_error(y_test, y_pred))
     print("RMSE : ", np.sqrt(mean_squared_error(y_test, y_pred)))
 
+evaluate_model(data , deg=3)
 
 data = data.drop(columns=["date_value"])
