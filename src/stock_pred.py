@@ -4,12 +4,11 @@ import warnings
 import numpy as np
 import pandas as pd
 import yfinance as yf
-import plotly.graph_objs as go
-from sklearn.metrics import r2_score, mean_absolute_error , mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import SGDRegressor
 
 warnings.simplefilter("ignore")
+
 
 def create_future_dates(df, days=None, weeks=None, months=None) -> pd.DataFrame:
     """function to create future dates as datetime objects depending on passed days
@@ -24,25 +23,28 @@ def create_future_dates(df, days=None, weeks=None, months=None) -> pd.DataFrame:
         pd.DataFrame: dataframe with future dates
     """
 
+    # set predicted_days depending on input
     if days:
         predicted_days = days
     elif weeks:
         predicted_days = weeks * 7
     elif months:
         predicted_days = months * 31
-    
+
     # create columns for days, months, years from datetime index
     df["day"] = df.index.day
     df["month"] = df.index.month
     df["year"] = df.index.year
     df = df.reset_index()
 
+    # slice DataFrame to keep only columns "day" , "month" , "year"
     date_df = df[["day", "month", "year"]]
 
+    # get latest date in DataFrame
     last_date = [list(date_df.iloc[-1])]
     future_dates = list()
 
-    # append dataframe with future dates
+    # append dataframe with future dates depending on input
     for i in range(predicted_days + 1):
         appended = [(last_date[0][0] + i), last_date[0][1], last_date[0][2]]
         if appended[0] > 31 and appended[1] > 12:
@@ -76,7 +78,8 @@ def create_future_dates(df, days=None, weeks=None, months=None) -> pd.DataFrame:
         future_dates.append(appended)
 
     # create new dataframe for future dates
-    future_dates_df = pd.DataFrame(columns=["day" , "month" , "year"])
+    future_dates_df = pd.DataFrame(columns=["day", "month", "year"])
+
     # append new dataframe with new dates
     for liste in future_dates:
         series = pd.Series(liste, index=date_df.columns)
@@ -84,14 +87,15 @@ def create_future_dates(df, days=None, weeks=None, months=None) -> pd.DataFrame:
 
     # create datetime values
     for i in range(len(future_dates_df)):
-       day = str(future_dates_df.loc[i, "day"])
-       month = str(future_dates_df.loc[i, "month"])
-       year = str(future_dates_df.loc[i, "year"])
+        day = str(future_dates_df.loc[i, "day"])
+        month = str(future_dates_df.loc[i, "month"])
+        year = str(future_dates_df.loc[i, "year"])
 
-       date_string = f"{day}/{month}/{year}"
-       future_dates_df.loc[ i , "Date"] = dt.datetime.strptime(date_string, "%d/%m/%Y")
+        date_string = f"{day}/{month}/{year}"
+        future_dates_df.loc[i, "Date"] = dt.datetime.strptime(date_string, "%d/%m/%Y")
 
     future_dates_df = future_dates_df[["Date"]]
+    # create ordinal numbers for datetime objects
     future_dates_df["date_value"] = future_dates_df["Date"].map(dt.datetime.toordinal)
     future_dates_df = future_dates_df.set_index(future_dates_df["Date"])
     future_dates_df = future_dates_df.drop(columns=["Date"])
@@ -102,6 +106,7 @@ def create_future_dates(df, days=None, weeks=None, months=None) -> pd.DataFrame:
 # get data from api for 5 years back
 data = yf.Ticker("AAPL").history("5y")
 stock_data = data.copy()
+
 # clean dataframe from unnecessary columns
 data = data.drop(columns=["Volume", "Dividends", "Stock Splits"])
 data = data[["Close"]]
@@ -110,66 +115,40 @@ data["date_value"] = data.index.map(dt.datetime.toordinal)
 # create prediciton model by using np regression
 pred_model = np.poly1d(np.polyfit(data["date_value"], data["Close"], deg=3))
 
-df = create_future_dates(data , months=1)
+df = create_future_dates(data, months=1)
 
 df["predicted"] = pred_model(df["date_value"])
 df = df.drop(columns=["date_value"])
 
-r2 = r2_score()
 
+def evaluate_model(data, deg: int) -> None:
+    """function to evaluate model using r2_score, mae, rmse
 
+    Args:
+        data (pd.DataFrame): original stock data
+        deg (int): degree of regression
+    """
 
-stock_data = stock_data[["Open"]]
+    # only keep "Open" column in DataFrame
+    data = data[["Open"]]
 
-X = stock_data.index.map(dt.datetime.toordinal)
-y = stock_data["Open"]
+    # store ordinal values of datetime objects in X and stock values in y
+    X = data.index.map(dt.datetime.toordinal)
+    y = data["Open"]
 
-X_train , X_test , y_train , y_test = train_test_split(X,y , test_size=.2)
+    # split dataset into train and test batch
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-model = np.poly1d( np.polyfit(X_train , y_train , deg = 1))
-y_pred = model(X_test)
+    # create model using np regresseion of n-degree
+    model = np.poly1d(np.polyfit(X_train, y_train, deg=deg))
 
-print( "R^2 : " , r2_score(y_test , y_pred))
-print( "MAE : " , mean_absolute_error(y_test , y_pred))
-print( "RMSE : " , np.sqrt(mean_squared_error(y_test , y_pred)))
+    # use model and predict values
+    y_pred = model(X_test)
 
+    # print out metrics for predicted data and evaluate model
+    print("R^2 : ", r2_score(y_test, y_pred))
+    print("MAE : ", mean_absolute_error(y_test, y_pred))
+    print("RMSE : ", np.sqrt(mean_squared_error(y_test, y_pred)))
 
-sgd_model = SGDRegressor()
-y_sgd_pred = model(X_test)
-
-print( "R^2 : " , r2_score(y_test , y_sgd_pred))
-print( "MAE : " , mean_absolute_error(y_test , y_sgd_pred))
-print( "RMSE : " , np.sqrt(mean_squared_error(y_test , y_sgd_pred)))
 
 data = data.drop(columns=["date_value"])
-
-fig = go.Figure()
-fig2 = go.Figure()
-#fig = fig.add_trace(
-#    go.Candlestick(
-#        x=data.index,
-#        close=data["Close"],
- #       name = "actual values"
-#    )
-
-#)
-fig = fig.add_trace(
-    go.Candlestick(
-        x = stock_data.index,
-        open = stock_data["Open"],
-        high = stock_data["High"],
-        low = stock_data["Low"],
-        close = stock_data["Close"],
-        name = "stock price"
-    )
-)
-
-fig2 = fig2.add_scatter(
-    x = df.index,
-    y = df["predicted"],
-    name = "predicted"
-)
-
-fig.show()
-fig2.show()
-
