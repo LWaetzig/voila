@@ -103,6 +103,36 @@ def create_future_dates(df, days=None, weeks=None, months=None) -> pd.DataFrame:
     return future_dates_df
 
 
+def evaluate_model(df, deg: int) -> None:
+    """function to evaluate model using r2_score, mae, rmse
+
+    Args:
+        data (pd.DataFrame): original stock data
+        deg (int): degree of regression
+    """
+
+    # only keep "Open" column in DataFrame
+    df = df[["Close"]]
+
+    # store ordinal values of datetime objects in X and stock values in y
+    X = df.index.map(dt.datetime.toordinal)
+    y = df["Close"]
+
+    # split dataset into train and test batch
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+    # create model using np regresseion of n-degree
+    model = np.poly1d(np.polyfit(X_train, y_train, deg=deg))
+
+    # use model and predict values
+    y_pred = model(X_test)
+
+    # print out metrics for predicted data and evaluate model
+    print("R^2 : ", r2_score(y_test, y_pred))
+    print("MAE : ", mean_absolute_error(y_test, y_pred))
+    print("RMSE : ", np.sqrt(mean_squared_error(y_test, y_pred)))
+
+
 # get data from api for 5 years back
 data = yf.Ticker("AAPL").history("5y")
 
@@ -119,36 +149,6 @@ df = create_future_dates(data, months=1)
 df["predicted"] = pred_model(df["date_value"])
 df = df.drop(columns=["date_value"])
 
-
-def evaluate_model(data, deg: int) -> None:
-    """function to evaluate model using r2_score, mae, rmse
-
-    Args:
-        data (pd.DataFrame): original stock data
-        deg (int): degree of regression
-    """
-
-    # only keep "Open" column in DataFrame
-    data = data[["Close"]]
-
-    # store ordinal values of datetime objects in X and stock values in y
-    X = data.index.map(dt.datetime.toordinal)
-    y = data["Close"]
-
-    # split dataset into train and test batch
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-    # create model using np regresseion of n-degree
-    model = np.poly1d(np.polyfit(X_train, y_train, deg=deg))
-
-    # use model and predict values
-    y_pred = model(X_test)
-
-    # print out metrics for predicted data and evaluate model
-    print("R^2 : ", r2_score(y_test, y_pred))
-    print("MAE : ", mean_absolute_error(y_test, y_pred))
-    print("RMSE : ", np.sqrt(mean_squared_error(y_test, y_pred)))
-
-evaluate_model(data , deg=3)
+evaluate_model(data, deg=3)
 
 data = data.drop(columns=["date_value"])
