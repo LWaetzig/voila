@@ -6,12 +6,12 @@ import cv2
 from src.DetectorAPI import Detector
 
 
-def face_blurring(input_path : str , threshold : float):
-    """_summary_
+def face_blurring(input_path : str , threshold : float) -> None:
+    """function to blur face in image
 
     Args:
-        input_path (str): _description_
-        threshold (float): _description_
+        input_path (str): path to image
+        threshold (float): value to decide wheater face fits Face Template or not
     """
 
     input_path = "data/" if input_path == None else input_path
@@ -32,11 +32,11 @@ def face_blurring(input_path : str , threshold : float):
 
 
 def blur_snippet(image, boxes : dict):
-    """_summary_
+    """function to blur detected face in image
 
     Args:
-        image (_type_): _description_
-        boxes (dict): _description_
+        image (array): image with face to blur
+        boxes (dict): dict with coordinates where face was detected
     """
     for box in boxes:
         # unpack each box
