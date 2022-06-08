@@ -6,6 +6,17 @@ import pandas as pd
 import yfinance as yf
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import Lasso
+
+from Stock import Stock, Predictor
+
+Stock = Stock("AAPL" , "5y")
+df = Stock.get_stock_data()
+
+Stock.visualize_data(df)
+
+Predictor = Predictor(model="linreg" , deg=3)
+predicted_df = Predictor.make_prediction(df)
 
 warnings.simplefilter("ignore")
 
@@ -103,7 +114,7 @@ def create_future_dates(df, days=None, weeks=None, months=None) -> pd.DataFrame:
     return future_dates_df
 
 
-def evaluate_model(df, deg: int) -> None:
+def evaluate_model(df, model = None , deg = None) -> None:
     """function to evaluate model using r2_score, mae, rmse
 
     Args:
@@ -121,9 +132,16 @@ def evaluate_model(df, deg: int) -> None:
     # split dataset into train and test batch
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-    # create model using np regresseion of n-degree
-    model = np.poly1d(np.polyfit(X_train, y_train, deg=deg))
+    if model == None:
+        # create model using np regresseion of n-degree
+        model = np.poly1d(np.polyfit(X_train, y_train, deg=deg))
 
+    else:
+        X_train = np.array(X_train).reshape(-1,1)
+        y_train = np.array(y_train).reshape(-1,1)
+
+        model.fit(X_train , y_train)
+    
     # use model and predict values
     y_pred = model(X_test)
 
@@ -149,6 +167,11 @@ df = create_future_dates(data, months=1)
 df["predicted"] = pred_model(df["date_value"])
 df = df.drop(columns=["date_value"])
 
-evaluate_model(data, deg=3)
+evaluate_model(data, model = "poly" , deg=3)
 
 data = data.drop(columns=["date_value"])
+
+
+lasso_model = Lasso(alpha=1)
+
+evaluate_model(data , lasso_model)
