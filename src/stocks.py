@@ -5,13 +5,8 @@ import plotly.graph_objs as go
 
 from Prediction import Predictor
 
-period = "7w"
 
-if "d" in period:
-    print(True)
-
-
-def get_stock_data(stock_name : str , period : str) -> pd.DataFrame:
+def get_stock_data(stock_name: str, period: str) -> pd.DataFrame:
     """get stock data for a specific company downloaded using yahoo finance
 
     Args:
@@ -33,16 +28,20 @@ def get_stock_data(stock_name : str , period : str) -> pd.DataFrame:
     # add mean value of stock price per day
     data["Mean"] = data.mean(axis="columns")
 
-    if "d" not in period or "w" not in period:
+    if "d" not in period:
         data["mva"] = data["Open"].rolling(50).mean()
 
     data["date_value"] = data.index.map(dt.datetime.toordinal)
 
     return data
 
-df = get_stock_data("AAPL" , "1d")
 
-def visualize_data(df: pd.DataFrame , stock_name : str, **add_args) -> None:
+df = get_stock_data("AAPL", "1d")
+
+
+def visualize_data(
+    df: pd.DataFrame, stock_name: str, moving_average=False, prediction=False
+) -> None:
     """vizualisze stock data using plotly
 
     Args:
@@ -63,11 +62,13 @@ def visualize_data(df: pd.DataFrame , stock_name : str, **add_args) -> None:
 
     fig = go.Figure()
 
-    fig.add_scatter(x=df.index, y=df["Mean"], name="mean price", opacity=0.7)
+    if moving_average == True:
+        fig.add_scatter(x=df.index, y=df["mva"], name="moving average", opacity=0.5)
 
-    fig.add_scatter(
-        x=df.index, y=df["mva"], name="moving average", opacity=0.5
-    )
+    if prediction == True:
+        fig.add_scatter(x=df.index, y=df["prediction"], name="predicted values")
+
+    fig.add_scatter(x=df.index, y=df["Mean"], name="mean price", opacity=0.7)
 
     fig.add_trace(
         go.Candlestick(
@@ -88,7 +89,8 @@ def visualize_data(df: pd.DataFrame , stock_name : str, **add_args) -> None:
 
     fig.show()
 
-visualize_data(df , "AAPL")
+
+visualize_data(df, "AAPL")
 
 
 predictor = Predictor(model="linreg", deg=3)
