@@ -12,12 +12,9 @@ warnings.simplefilter("ignore")
 
 
 class Stock:
-    def __init__(self, name, period, predicted_interval = None , model=None, deg=None):
+    def __init__(self, name, period):
         self.name = name
         self.period = period
-        self.predicted_interval = predicted_interval if predicted_interval is not None else None
-        self.model = model if model is not None else None
-        self.deg = deg if deg is not None else None
 
     def get_stock_data(self) -> pd.DataFrame:
         """get stock data for a specific company downloaded using yahoo finance
@@ -74,7 +71,7 @@ class Stock:
         future_dates = list()
 
         # append dataframe with future dates depending on input
-        for i in range(self.predicted_interval + 1):
+        for i in range(8):
             appended = [(last_date[0][0] + i), last_date[0][1], last_date[0][2]]
             if appended[0] > 31 and appended[1] > 12:
                 appended[0] = 1
@@ -149,22 +146,19 @@ class Stock:
         df = df[["Open", "Close", "High", "Low"]]
         df["date_value"] = df.index.map(dt.datetime.toordinal)
 
-        if self.model == "linreg":
-            pred_model = np.poly1d(
-                np.polyfit(df["date_value"], df["Close"], deg=self.deg)
-            )
+        pred_model = np.poly1d(
+            np.polyfit(df["date_value"], df["Close"], deg=3)
+        )
 
-            pred_df = self.create_future_dates(df)
-
-            pred_df["predicted"] = pred_model(pred_df["date_value"])
-            pred_df = pred_df.drop(columns=["date_value"])
+        pred_df = self.create_future_dates(df)
+        pred_df["predicted"] = pred_model(pred_df["date_value"])
+        pred_df = pred_df.drop(columns=["date_value"])
 
         return pred_df
 
 
     def trendline(self) -> pd.DataFrame:
         pass
-        return pd.DataFrame
 
 
     def evaluate_model(self, df) -> None:
@@ -184,12 +178,11 @@ class Stock:
         # split dataset into train and test batch
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-        if self.model == "linreg":
-            # create regression model
-            pred_model = np.poly1d(np.polyfit(X_train, y_train, deg=self.deg))
-
-            # use model to prredict values
-            y_pred = pred_model(X_test)
+        # create regression model
+        pred_model = np.poly1d(np.polyfit(X_train, y_train, deg=3))
+        
+        # use model to prredict values
+        y_pred = pred_model(X_test)
 
         # print out metrics for predicted data and evaluate model
         print("R^2 : ", r2_score(y_test, y_pred))

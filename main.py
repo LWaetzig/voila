@@ -1,6 +1,6 @@
 from src.Stock import Stock
 
-stock = Stock("TSLA" , "3y", predicted_interval=7, model="linreg", deg=3)
+stock = Stock("TSLA" , "3y")
 
 df = stock.get_stock_data()
 
