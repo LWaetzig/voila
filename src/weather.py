@@ -12,12 +12,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pytz
 import requests
+import numpy as np
 
 icons = {
-    "sun" : "figures/sun.png",
-    "rain" : "figures/rain.png",
+    "Clear" : "figures/sun.png",
+    "Rain" : "figures/rain.png",
     "sun_cloud" : "figures/sun_cloud.png",
-    "cloud" : "figures/cloud.png",
+    "Clouds" : "figures/cloud.png",
     "wind" : "figures/wind.png",
 }
 
@@ -26,11 +27,11 @@ API_KEY = "0903f43c667c445d4a0c16920ef81c36"
 SHAPE_FILE = "data/germany_geo.json"
 
 # input for city
-city_name = str(input("give me a city name: "))
+# city_name = str(input("give me a city name: "))
 
 
 
-def get_weather_data_for_city(
+def get_weather_data_city(
     city_name: str,
     api_key: str
 )-> pd.DataFrame:
@@ -71,11 +72,11 @@ def get_weather_data_for_city(
         # create, fill DataFrame for weather data and set timestamps as index
         weather_df = pd.DataFrame()
         weather_df["date"] = [
-            dt.fromtimestamp(entry["dt"], pytz.timezone("Europe/Berlin"))
+            dt.datetime.fromtimestamp(entry["dt"], pytz.timezone("Europe/Berlin"))
             for entry in forecast
         ]
         weather_df["temp"] = [entry["temp"] for entry in forecast]
-        weather_df["fells_like"] = [entry["feels_like"] for entry in forecast]
+        weather_df["feels_like"] = [entry["feels_like"] for entry in forecast]
         weather_df["pressure"] = [entry["pressure"] for entry in forecast]
         weather_df["uvi"] = [entry["uvi"] for entry in forecast]
         weather_df["clouds"] = [entry["clouds"] for entry in forecast]
@@ -85,11 +86,11 @@ def get_weather_data_for_city(
         return weather_df
 
 
-def setup_dataframe(
+def get_weather_data_germany(
     api_key: str,
     shape_file: str,
 ) -> pd.DataFrame:
-    """setup dataframe with geo-data for germany and weather data from openweather-api
+    """get geological data using shapefile and weather data using api request from openweather-api
 
     Args:
         api_key (str): necessary authentification to create api request
@@ -160,11 +161,32 @@ def setup_dataframe(
     return germany
 
 
-df = setup_dataframe(API_KEY, SHAPE_FILE)
+df_germany = get_weather_data_germany(API_KEY, SHAPE_FILE)
+df_germany.plot(column="temp", legend=True, cmap="OrRd").set_axis_off()
+
+
+
+df = get_weather_data_city(city_name="Dresden" , api_key=API_KEY)
+
+# get local maximum 
+ymax = max(df["temp"])
+xpos = np.where(df["temp"] == ymax)
+xmax = df.index[xpos]
+
+# create figure to plot
+fig , axes = plt.subplots(2 , figsize=(12,8))
+# add to plots for temperature and feels like
+axes[0].plot(df.index , df["temp"] , color = "tab:red" , label = "actual temp")
+axes[0].plot(df.index , df["feels_like"] , color = "tab:orange" , label = "feels like")
+axes[0].set_title("Weather forecast per hour")
+axes[0].set_ylabel("temperature in degree celsius")
+axes[0].set_xlabel("date")
+axes[0].legend(loc="upper right");
+axes[0].annotate(f"{ymax} °C", xy=(xmax, ymax), xytext=(xmax, ymax + 0.25),);
 
 
 # plt.plot(weather_hourly.index, weather_hourly["temp"])
-df.plot(column="temp", legend=True, cmap="OrRd").set_axis_off()
+
 
 fig , axes = plt.subplots(5,1)
 axes.ravel()
@@ -175,3 +197,6 @@ for key , value in icons.items():
     helper += 1
 
 fig.tight_layout()
+
+
+corona = pd.read_csv("data/corona.csv")
