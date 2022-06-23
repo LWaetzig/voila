@@ -165,7 +165,6 @@ df_germany = get_weather_data_germany(API_KEY, SHAPE_FILE)
 df_germany.plot(column="temp", legend=True, cmap="OrRd").set_axis_off()
 
 
-
 df = get_weather_data_city(city_name="Dresden" , api_key=API_KEY)
 
 # get local maximum 
