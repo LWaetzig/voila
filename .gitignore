@@ -10,7 +10,6 @@ __pycache__/
 .vscode/*
 
 # add local directories
-data/**
 .vscode/**
 
 # Distribution / packaging
